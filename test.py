@@ -13,7 +13,7 @@ import argparse
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--latent_dim", type=int, default=64)
-    parser.add_argument("--batch_size", type=int, default=128)
+    parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--epochs", type=int, default=10)
     parser.add_argument("--dataset", type=str, default="CIFAR10", choices=["MNIST", "CIFAR10"])
     parser.add_argument("--path", type=str, default="/home/d3ac/Desktop/dataset")
@@ -39,45 +39,28 @@ if __name__ == "__main__":
     encoder = Encoder(latent_dim, data_dim).to(torch.device('cuda'))
     decoder = Decoder(latent_dim, data_dim).to(torch.device('cuda'))
     model = VAE(encoder, decoder).to(torch.device('cuda'))
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-    scheduler = torch.optim.lr_scheduler.MultiStepLR(optimizer, milestones=[30, 60, 90], gamma=0.3)
-
-    # training
-    Trange = tqdm.trange(epochs)
-    train_loss_list = []
-    test_loss_list = []
-    for epoch in Trange:
-        model.train()
-        train_loss = 0
-        for X, y in train_iter:
-            X = X.to(torch.device('cuda')).reshape(batch_size, -1)
-            loss = model(X).mean()
-            optimizer.zero_grad()
-            loss.backward()
-            optimizer.step()
-            train_loss += loss.item()
-        scheduler.step()
-
-        model.eval()
-        test_loss = 0
-        with torch.no_grad():
-            for X, y in test_iter:
-                X = X.to(torch.device('cuda')).reshape(batch_size, -1)
-                loss = model(X).mean()
-                test_loss += loss.item()
-        
-        test_loss /= len(test_iter)
-        train_loss /= len(train_iter)
-        Trange.set_postfix({"test_loss": test_loss, "train_loss": train_loss})        
-        test_loss_list.append(test_loss)
-        train_loss_list.append(train_loss)
-
-    # save
     if args.dataset == "MNIST":
-        torch.save(model.state_dict(), "model-mnist.pth")
+        model.load_state_dict(torch.load('model-mnist.pth', weights_only=True))
     else:
-        torch.save(model.state_dict(), "model-cifa10.pth")
-    plt.plot(np.arange(epochs)[1:], train_loss_list[1:], label="train_loss")
-    plt.plot(np.arange(epochs)[1:], test_loss_list[1:], label="test_loss")
-    plt.legend()
-    plt.show()
+        model.load_state_dict(torch.load('model-cifa10.pth', weights_only=True))
+
+    # test
+    with torch.no_grad():
+        for X, y in test_iter:
+            pic_size = X.shape[-1]
+            X = X.to(torch.device('cuda')).reshape(batch_size, -1)
+            new_X = model.reconstruct(X, pic_size, args.dataset)
+            X = X.cpu().numpy().reshape(batch_size, -1, pic_size, pic_size)
+            new_X = new_X.cpu().numpy().reshape(batch_size, -1, pic_size, pic_size)
+            
+            fig, axes = plt.subplots(2, batch_size, figsize=(batch_size * 2, 4))
+            for i in range(batch_size):
+                axes[0, i].imshow(X[i].transpose(1, 2, 0), cmap='gray')
+                axes[0, i].axis('off')
+                axes[1, i].imshow(new_X[i].transpose(1, 2, 0), cmap='gray')
+                axes[1, i].axis('off')
+            
+            axes[0, 0].set_title('Original')
+            axes[1, 0].set_title('Reconstructed')
+            plt.show()
+            break

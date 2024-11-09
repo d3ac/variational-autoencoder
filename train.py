@@ -51,8 +51,9 @@ if __name__ == "__main__":
         test_loss /= len(test_iter)
         Trange.set_postfix(test_loss=test_loss)
         loss_list.append(test_loss)
-    
 
+    # save
+    torch.save(model.state_dict(), "model.pth")
 
     plt.plot(np.arange(len(loss_list)), np.array(loss_list))
     plt.show()

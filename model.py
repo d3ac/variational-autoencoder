@@ -65,7 +65,7 @@ class VAE(nn.Module):
         # ELBO
         reconstruction_loss = F.mse_loss(self.decoder(z), x) # 越小越好
         KL_divergence = torch.mean(-0.5 * torch.sum(1 + log_var - mu.pow(2) - log_var.exp(), dim=-1), dim=0) # 因为假设了p(z)是标准正态分布, q(z|x)是(mu, std)的正态分布, 所以化简后就是这样了
-        loss = reconstruction_loss #+ 0.00025 * KL_divergence
+        loss = reconstruction_loss + 0.00025 * KL_divergence
         return loss
     
     def reconstruct(self, x, dim, dataset):

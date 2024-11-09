@@ -14,8 +14,8 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("--latent_dim", type=int, default=64)
     parser.add_argument("--batch_size", type=int, default=128)
-    parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--dataset", type=str, default="CIFAR10", choices=["MNIST", "CIFAR10"])
+    parser.add_argument("--epochs", type=int, default=100)
+    parser.add_argument("--dataset", type=str, default="MNIST", choices=["MNIST", "CIFAR10"])
     parser.add_argument("--path", type=str, default="/home/d3ac/Desktop/dataset")
 
     args = parser.parse_args()
@@ -36,7 +36,7 @@ if __name__ == "__main__":
         test_iter = DataLoader(datasets.CIFAR10(root=args.path, train=False, download=True, transform=transforms.ToTensor()), batch_size=batch_size, shuffle=False, num_workers=7, pin_memory=True, drop_last=True)
         data_dim = 32 * 32 * 3
     # model
-    encoder = Encoder(latent_dim, data_dim).to(torch.device('cuda'))
+    encoder = Encoder(latent_dim, 1 if args.dataset == "MNIST" else 3).to(torch.device('cuda'))
     decoder = Decoder(latent_dim, data_dim).to(torch.device('cuda'))
     model = VAE(encoder, decoder).to(torch.device('cuda'))
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
@@ -50,7 +50,7 @@ if __name__ == "__main__":
         model.train()
         train_loss = 0
         for X, y in train_iter:
-            X = X.to(torch.device('cuda')).reshape(batch_size, -1)
+            X = X.to(torch.device('cuda'))
             loss = model(X).mean()
             optimizer.zero_grad()
             loss.backward()
@@ -62,7 +62,7 @@ if __name__ == "__main__":
         test_loss = 0
         with torch.no_grad():
             for X, y in test_iter:
-                X = X.to(torch.device('cuda')).reshape(batch_size, -1)
+                X = X.to(torch.device('cuda'))
                 loss = model(X).mean()
                 test_loss += loss.item()
         

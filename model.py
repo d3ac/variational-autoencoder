@@ -73,7 +73,8 @@ class VAE(nn.Module):
     def reconstruct(self, x, dim, dataset):
         mu, log_var = self.encoder.encode(x)
         z = self.encoder.reparameterization(mu, log_var)
-        if dataset == "MNIST":
-            return self.decoder(z).reshape(-1, 1, dim, dim)
-        else:
-            return self.decoder(z).reshape(-1, 3, dim, dim)
+        return self.decoder(z).reshape(-1, 1 if dataset == "MNIST" else 3, dim, dim)
+    
+    def sample(self, n, dim, latent_dim, dataset):
+        z = torch.randn(n, latent_dim).to(torch.device('cuda'))
+        return self.decoder(z).reshape(n, 1 if dataset == "MNIST" else 3, dim, dim)

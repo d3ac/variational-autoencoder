@@ -1,3 +1,4 @@
 data/
 model-cifa10.pth
 model-mnist.pth
+__pycache__

@@ -15,7 +15,7 @@ if __name__ == "__main__":
     parser.add_argument("--latent_dim", type=int, default=64)
     parser.add_argument("--batch_size", type=int, default=8)
     parser.add_argument("--epochs", type=int, default=10)
-    parser.add_argument("--dataset", type=str, default="MNIST", choices=["MNIST", "CIFAR10"])
+    parser.add_argument("--dataset", type=str, default="CIFAR10", choices=["MNIST", "CIFAR10"])
     parser.add_argument("--path", type=str, default="/home/d3ac/Desktop/dataset")
 
     args = parser.parse_args()
@@ -44,7 +44,7 @@ if __name__ == "__main__":
     else:
         model.load_state_dict(torch.load('model-cifa10.pth', weights_only=True))
 
-    # test
+    # reconstruction
     with torch.no_grad():
         for X, y in test_iter:
             pic_size = X.shape[-1]
@@ -53,7 +53,7 @@ if __name__ == "__main__":
             X = X.cpu().numpy().reshape(batch_size, -1, pic_size, pic_size)
             new_X = new_X.cpu().numpy().reshape(batch_size, -1, pic_size, pic_size)
             
-            fig, axes = plt.subplots(2, batch_size, figsize=(batch_size * 2, 4))
+            fig, axes = plt.subplots(3, batch_size, figsize=(batch_size * 2, 6))
             for i in range(batch_size):
                 axes[0, i].imshow(X[i].transpose(1, 2, 0), cmap='gray')
                 axes[0, i].axis('off')
@@ -62,5 +62,17 @@ if __name__ == "__main__":
             
             axes[0, 0].set_title('Original')
             axes[1, 0].set_title('Reconstructed')
+            break
+
+    # generation
+    with torch.no_grad():
+        for X, y in test_iter:
+            pic_size = X.shape[-1]
+            new_X = model.sample(batch_size, pic_size, latent_dim, args.dataset).cpu().numpy().reshape(batch_size, -1, pic_size, pic_size)
+            
+            for i in range(batch_size):
+                axes[2, i].imshow(new_X[i].transpose(1, 2, 0), cmap='gray')
+                axes[2, i].axis('off')
+            axes[2, 0].set_title('generation')
             plt.show()
             break
